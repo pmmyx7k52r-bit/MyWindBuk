@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WindBuk - Lokaler Wind-Radar</title>
+<!-- Eingebettetes Favicon (SVG als Data-URI) -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%230f172a'/%3E%3Cstop offset='100%25' stop-color='%231e293b'/%3E%3C/linearGradient%3E%3ClinearGradient id='wind1' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%2338bdf8' stop-opacity='0.2'/%3E%3Cstop offset='50%25' stop-color='%2338bdf8'/%3E%3Cstop offset='100%25' stop-color='%230284c7'/%3E%3C/linearGradient%3E%3ClinearGradient id='wind2' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%237dd3fc' stop-opacity='0.2'/%3E%3Cstop offset='50%25' stop-color='%237dd3fc'/%3E%3Cstop offset='100%25' stop-color='%2338bdf8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='512' height='512' rx='112' fill='url(%23bg)'/%3E%3Ccircle cx='256' cy='256' r='190' fill='none' stroke='%23334155' stroke-width='4' stroke-dasharray='8 8'/%3E%3Ctext x='256' y='82' font-family='-apple-system, sans-serif' font-weight='800' font-size='28' fill='%2338bdf8' text-anchor='middle'%3EN%3C/text%3E%3Cpath d='M 120 180 Q 240 140 320 180 A 25 25 0 1 1 300 210 Q 230 180 140 210' fill='none' stroke='url(%23wind1)' stroke-width='18' stroke-linecap='round'/%3E%3Cpath d='M 90 256 Q 256 210 370 256 A 30 30 0 1 1 340 295 Q 240 256 110 290' fill='none' stroke='url(%23wind2)' stroke-width='22' stroke-linecap='round'/%3E%3Cpath d='M 140 332 Q 230 310 290 332 A 20 20 0 1 1 275 358 Q 220 340 150 355' fill='none' stroke='url(%23wind1)' stroke-width='14' stroke-linecap='round'/%3E%3Cpolygon points='256,105 268,135 256,127 244,135' fill='%23f43f5e'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#0f172a">
+
+<style>
+:root {
+--bg-color: #0f172a;
+--card-bg: #1e293b;
+--accent-blue: #38bdf8;
+--accent-dark: #0284c7;
+--text-main: #f8fafc;
+--text-sub: #94a3b8;
+--border-color: #334155;
+--alert-red: #f43f5e;
+--success-green: #10b981;
+}
+
+* {
+box-sizing: border-box;
+margin: 0;
+padding: 0;
+}
+
+body {
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+background-color: var(--bg-color);
+color: var(--text-main);
+padding: 20px 16px 40px;
+max-width: 540px;
+margin: 0 auto;
+line-height: 1.5;
+}
+
+header {
+text-align: center;
+margin-bottom: 24px;
+}
+
+.app-title {
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 10px;
+font-size: 1.8rem;
+font-weight: 800;
+color: var(--accent-blue);
+letter-spacing: -0.5px;
+}
+
+.app-subtitle {
+font-size: 0.9rem;
+color: var(--text-sub);
+margin-top: 4px;
+}
+
+.controls {
+display: flex;
+flex-direction: column;
+gap: 10px;
+margin-bottom: 24px;
+}
+
+.btn {
+background-color: var(--accent-dark);
+color: #ffffff;
+border: none;
+padding: 14px 20px;
+font-size: 1rem;
+font-weight: 700;
+border-radius: 12px;
+cursor: pointer;
+transition: all 0.2s ease;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 8px;
+box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+}
+
+.btn:hover {
+background-color: #0369a1;
+transform: translateY(-1px);
+}
+
+.btn-secondary {
+background-color: var(--card-bg);
+color: var(--accent-blue);
+border: 1px solid var(--border-color);
+box-shadow: none;
+font-size: 0.88rem;
+padding: 10px 16px;
+}
+
+.status-badge {
+font-size: 0.8rem;
+text-align: center;
+color: var(--text-sub);
+min-height: 20px;
+}
+
+.card {
+background-color: var(--card-bg);
+border-radius: 18px;
+padding: 20px;
+margin-bottom: 16px;
+border: 1px solid var(--border-color);
+box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+.card-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+border-bottom: 1px solid var(--border-color);
+padding-bottom: 10px;
+margin-bottom: 14px;
+}
+
+.card-header h3 {
+font-size: 1rem;
+text-transform: uppercase;
+letter-spacing: 1px;
+color: var(--text-sub);
+}
+
+.date-label {
+font-size: 0.85rem;
+color: var(--accent-blue);
+font-weight: 600;
+}
+
+.wind-main {
+display: flex;
+align-items: center;
+justify-content: space-between;
+margin-bottom: 12px;
+}
+
+.wind-name {
+font-size: 1.75rem;
+font-weight: 800;
+color: #ffffff;
+line-height: 1.2;
+}
+
+.compass-arrow {
+width: 48px;
+height: 48px;
+background-color: rgba(56, 189, 248, 0.1);
+border: 1px solid var(--border-color);
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 1.4rem;
+transition: transform 0.5s ease;
+}
+
+.wind-stats {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 12px;
+background: rgba(15, 23, 42, 0.5);
+padding: 12px 14px;
+border-radius: 12px;
+}
+
+.stat-item {
+display: flex;
+flex-direction: column;
+}
+
+.stat-label {
+font-size: 0.75rem;
+color: var(--text-sub);
+text-transform: uppercase;
+}
+
+.stat-value {
+font-size: 1.1rem;
+font-weight: 700;
+color: var(--text-main);
+}
+
+.hourly-section {
+margin-top: 14px;
+padding-top: 12px;
+border-top: 1px dashed var(--border-color);
+}
+
+.hourly-title {
+font-size: 0.8rem;
+color: var(--text-sub);
+margin-bottom: 8px;
+font-weight: 600;
+}
+
+.hourly-scroll {
+display: flex;
+gap: 10px;
+overflow-x: auto;
+padding-bottom: 6px;
+}
+
+.hourly-scroll::-webkit-scrollbar {
+height: 4px;
+}
+
+.hourly-scroll::-webkit-scrollbar-thumb {
+background: var(--border-color);
+border-radius: 4px;
+}
+
+.hourly-item {
+flex: 0 0 auto;
+background: rgba(15, 23, 42, 0.4);
+padding: 8px 10px;
+border-radius: 8px;
+text-align: center;
+font-size: 0.75rem;
+min-width: 60px;
+border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.hourly-time {
+color: var(--text-sub);
+margin-bottom: 4px;
+}
+
+.hourly-speed {
+font-weight: 700;
+}
+
+footer {
+text-align: center;
+margin-top: 30px;
+font-size: 0.75rem;
+color: var(--text-sub);
+}
+
+footer a {
+color: var(--accent-blue);
+text-decoration: none;
+}
+</style>
+</head>
+<body>
+
+<header>
+<div class="app-title">
+<span>💨</span> WindBuk
+</div>
+<div class="app-subtitle">Lokaler Wind-Erkenner & Vorhersage</div>
+</header>
+
+<div class="controls">
+<button class="btn" onclick="fetchLocationAndWind()">
+<span>📍</span> Standort ermitteln & Wind prüfen
+</button>
+<button class="btn btn-secondary" onclick="loadDemoData()">
+⚡ Beispiel-Standort laden (Adria / Kroatien)
+</button>
+<div id="status-msg" class="status-badge">Tippe auf den Button, um den aktuellen Wind abzurufen.</div>
+</div>
+
+<!-- HEUTE CARD -->
+<div class="card">
+<div class="card-header">
+<h3>Heute</h3>
+<span id="today-date" class="date-label">--.--.----</span>
+</div>
+<div class="wind-main">
+<div>
+<div id="today-wind-name" class="wind-name">--</div>
+<div id="today-direction-text" style="font-size: 0.9rem; color: var(--text-sub);">Warte auf GPS...</div>
+</div>
+<div id="today-compass" class="compass-arrow">🧭</div>
+</div>
+<div class="wind-stats">
+<div class="stat-item">
+<span class="stat-label">Max. Böen</span>
+<span id="today-gusts" class="stat-value">-- km/h</span>
+</div>
+<div class="stat-item">
+<span class="stat-label">Windrichtung</span>
+<span id="today-deg" class="stat-value">--°</span>
+</div>
+</div>
+
+<div class="hourly-section">
+<div class="hourly-title">STÜNDLICHER VERLAUF (HEUTE)</div>
+<div id="today-hourly" class="hourly-scroll">
+<div class="hourly-item">Keine Daten</div>
+</div>
+</div>
+</div>
+
+<!-- MORGEN CARD -->
+<div class="card">
+<div class="card-header">
+<h3>Morgen</h3>
+<span id="tomorrow-date" class="date-label">--.--.----</span>
+</div>
+<div class="wind-main">
+<div>
+<div id="tomorrow-wind-name" class="wind-name">--</div>
+<div id="tomorrow-direction-text" style="font-size: 0.9rem; color: var(--text-sub);">Warte auf GPS...</div>
+</div>
+<div id="tomorrow-compass" class="compass-arrow">🧭</div>
+</div>
+<div class="wind-stats">
+<div class="stat-item">
+<span class="stat-label">Max. Böen</span>
+<span id="tomorrow-gusts" class="stat-value">-- km/h</span>
+</div>
+<div class="stat-item">
+<span class="stat-label">Windrichtung</span>
+<span id="tomorrow-deg" class="stat-value">--°</span>
+</div>
+</div>
+</div>
+
+<footer>
+Daten bereitgestellt durch <a href="https://open-meteo.com/" target="_blank">Open-Meteo API</a><br>
+WindBuk &copy; Single-File Version
+</footer>
+
+<script>
+function getWindClassification(deg, speed) {
+if (speed >= 65) return { name: "Sturm / Ex-Hurrikan", desc: "Extrem starker Wind", code: "STURM" };
+if (deg >= 22.5 && deg < 67.5) return { name: "Bura / Bora", desc: "Nordost (NO) - Böig, kalt & fallend", code: "NE" };
+if (deg >= 67.5 && deg < 112.5) return { name: "Levante", desc: "Ost (O) - Mäßig, feucht", code: "E" };
+if (deg >= 112.5 && deg < 157.5) return { name: "Jugo / Scirocco", desc: "Südost (SO) - Warm, feucht, hohe Wellen", code: "SE" };
+if (deg >= 157.5 && deg < 202.5) return { name: "Ostro / Oštro", desc: "Süd (S) - Warm, gleichmäßig", code: "S" };
+if (deg >= 202.5 && deg < 247.5) return { name: "Libeccio / Lebić", desc: "Südwest (SW) - Böig, raue See", code: "SW" };
+if (deg >= 247.5 && deg < 292.5) return { name: "Ponenat / Ponente", desc: "West (W) - Kurz, oft stark", code: "W" };
+if (deg >= 292.5 && deg < 337.5) return { name: "Maestral / Mistral", desc: "Nordwest (NW) - Angenehmer Schönwetterwind", code: "NW" };
+return { name: "Tramontana", desc: "Nord (N) - Kalt, frische Brise", code: "N" };
+}
+
+// Neu: Funktion zur Farbzuweisung basierend auf der Windgeschwindigkeit
+function getWindColor(speed) {
+if (speed < 20) return '#10b981'; // Grün (Ruhig / Schwach)
+if (speed < 40) return '#fbbf24'; // Gelb (Mäßig)
+if (speed < 62) return '#f97316'; // Orange (Starker Wind)
+return '#f43f5e'; // Rot (Sturm / Orkan)
+}
+
+function setStatus(msg, isError = false) {
+const el = document.getElementById('status-msg');
+el.innerText = msg;
+el.style.color = isError ? 'var(--alert-red)' : 'var(--text-sub)';
+}
+
+function formatDate(dateObj) {
+const d = String(dateObj.getDate()).padStart(2, '0');
+const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+const y = dateObj.getFullYear();
+return `${d}.${m}.${y}`;
+}
+
+function fetchLocationAndWind() {
+if (!navigator.geolocation) {
+setStatus("Geolokalisierung wird von Ihrem Browser nicht unterstützt.", true);
+return;
+}
+
+setStatus("Standort wird ermittelt...");
+
+navigator.geolocation.getCurrentPosition(
+position => {
+const lat = position.coords.latitude;
+const lon = position.coords.longitude;
+setStatus("Wetterdaten werden geladen...");
+loadWindData(lat, lon);
+},
+error => {
+let errText = "GPS-Zugriff verweigert."
+if (error.code === error.POSITION_UNAVAILABLE) errText = "Standortinformationen nicht verfügbar."
+if (error.code === error.TIMEOUT) errText = "Zeitüberschreitung bei Standortabfrage."
+setStatus(errText + " Nutze Beispieldaten.", true);
+},
+{ timeout: 10000 }
+);
+}
+
+function loadWindData(lat, lon) {
+const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=winddirection_10m_dominant,windspeed_10m_max&hourly=windspeed_10m,winddirection_10m&timezone=auto`;
+
+fetch(url)
+.then(res => {
+if (!res.ok) throw new Error("Netzwerkantwort nicht ok");
+return res.json();
+})
+.then(data => {
+updateUI(data);
+setStatus("Daten erfolgreich aktualisiert! ✅");
+})
+.catch(err => {
+console.error(err);
+setStatus("Fehler beim Abrufen der Wetterdaten.", true);
+});
+}
+
+function updateUI(data) {
+const now = new Date();
+const tomorrow = new Date();
+tomorrow.setDate(now.getDate() + 1);
+
+document.getElementById('today-date').innerText = formatDate(now);
+document.getElementById('tomorrow-date').innerText = formatDate(tomorrow);
+
+// Heute Daten setzen
+const todayDeg = Math.round(data.daily.winddirection_10m_dominant[0]);
+const todayGusts = Math.round(data.daily.windspeed_10m_max[0]);
+const todayWind = getWindClassification(todayDeg, todayGusts);
+
+document.getElementById('today-wind-name').innerText = todayWind.name;
+document.getElementById('today-direction-text').innerText = todayWind.desc;
+document.getElementById('today-deg').innerText = `${todayDeg}°`;
+const todayGustsEl = document.getElementById('today-gusts');
+todayGustsEl.innerText = `${todayGusts} km/h`;
+todayGustsEl.style.color = getWindColor(todayGusts); // Farbe anwenden
+document.getElementById('today-compass').style.transform = `rotate(${todayDeg}deg)`;
+
+// Morgen Daten setzen
+const tomorrowDeg = Math.round(data.daily.winddirection_10m_dominant[1]);
+const tomorrowGusts = Math.round(data.daily.windspeed_10m_max[1]);
+const tomorrowWind = getWindClassification(tomorrowDeg, tomorrowGusts);
+
+document.getElementById('tomorrow-wind-name').innerText = tomorrowWind.name;
+document.getElementById('tomorrow-direction-text').innerText = tomorrowWind.desc;
+document.getElementById('tomorrow-deg').innerText = `${tomorrowDeg}°`;
+const tomorrowGustsEl = document.getElementById('tomorrow-gusts');
+tomorrowGustsEl.innerText = `${tomorrowGusts} km/h`;
+tomorrowGustsEl.style.color = getWindColor(tomorrowGusts); // Farbe anwenden
+document.getElementById('tomorrow-compass').style.transform = `rotate(${tomorrowDeg}deg)`;
+
+// Stündliche Daten setzen
+const hourlyContainer = document.getElementById('today-hourly');
+hourlyContainer.innerHTML = '';
+
+for (let i = 0; i < 24; i += 3) {
+const timeStr = `${String(i).padStart(2, '0')}:00`;
+const speed = Math.round(data.hourly.windspeed_10m[i]);
+const deg = Math.round(data.hourly.winddirection_10m[i]);
+const speedColor = getWindColor(speed); // Farbe anwenden
+
+const item = document.createElement('div');
+item.className = 'hourly-item';
+item.innerHTML = `
+<div class="hourly-time">${timeStr}</div>
+<div style="transform: rotate(${deg}deg); display: inline-block; margin: 2px 0;">⬆️</div>
+<div class="hourly-speed" style="color: ${speedColor}">${speed} <span style="font-size:0.65rem; color: var(--text-sub);">km/h</span></div>
+`;
+hourlyContainer.appendChild(item);
+}
+}
+
+function loadDemoData() {
+setStatus("Beispieldaten (Bura an der Adria) geladen.");
+const demoData = {
+daily: {
+winddirection_10m_dominant: [45, 315],
+windspeed_10m_max: [52, 18]
+},
+hourly: {
+windspeed_10m: [35, 38, 42, 48, 52, 50, 45, 40, 32, 28, 25, 22, 20, 18, 18, 16, 15, 14, 12, 10, 10, 8, 8, 8],
+winddirection_10m: Array(24).fill(45)
+}
+};
+updateUI(demoData);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+fetchLocationAndWind();
+});
+</script>
+</body>
+</html>
