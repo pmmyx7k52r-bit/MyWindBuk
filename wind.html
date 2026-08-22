@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WindBuk - Lokaler Wind-Radar</title>
-<!-- Eingebettetes Favicon -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%230f172a'/%3E%3Cstop offset='100%25' stop-color='%231e293b'/%3E%3C/linearGradient%3E%3ClinearGradient id='wind1' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%2338bdf8' stop-opacity='0.2'/%3E%3Cstop offset='50%25' stop-color='%2338bdf8'/%3E%3Cstop offset='100%25' stop-color='%230284c7'/%3E%3C/linearGradient%3E%3ClinearGradient id='wind2' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%237dd3fc' stop-opacity='0.2'/%3E%3Cstop offset='50%25' stop-color='%237dd3fc'/%3E%3Cstop offset='100%25' stop-color='%2338bdf8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='512' height='512' rx='112' fill='url(%23bg)'/%3E%3Ccircle cx='256' cy='256' r='190' fill='none' stroke='%23334155' stroke-width='4' stroke-dasharray='8 8'/%3E%3Ctext x='256' y='82' font-family='-apple-system, sans-serif' font-weight='800' font-size='28' fill='%2338bdf8' text-anchor='middle'%3EN%3C/text%3E%3Cpath d='M 120 180 Q 240 140 320 180 A 25 25 0 1 1 300 210 Q 230 180 140 210' fill='none' stroke='url(%23wind1)' stroke-width='18' stroke-linecap='round'/%3E%3Cpath d='M 90 256 Q 256 210 370 256 A 30 30 0 1 1 340 295 Q 240 256 110 290' fill='none' stroke='url(%23wind2)' stroke-width='22' stroke-linecap='round'/%3E%3Cpath d='M 140 332 Q 230 310 290 332 A 20 20 0 1 1 275 358 Q 220 340 150 355' fill='none' stroke='url(%23wind1)' stroke-width='14' stroke-linecap='round'/%3E%3Cpolygon points='256,105 268,135 256,127 244,135' fill='%23f43f5e'/%3E%3C/svg%3E">
 <meta name="theme-color" content="#0f172a">
 
@@ -275,7 +274,6 @@ text-decoration: none;
 <div class="app-subtitle">Lokaler Wind-Erkenner & Vorhersage</div>
 </header>
 
-<!-- NEU: Standort-Anzeige -->
 <div id="location-bar" class="location-display" style="display: none;">
 <span>📍</span> <span id="city-name">Standort wird gesucht...</span>
 </div>
@@ -310,7 +308,7 @@ text-decoration: none;
 </div>
 <div class="stat-item">
 <span class="stat-label">Windrichtung</span>
-<span id="today-deg" class="stat-value">--°</span>
+<span id="today-deg" class="stat-value">--</span>
 </div>
 </div>
 
@@ -342,7 +340,7 @@ text-decoration: none;
 </div>
 <div class="stat-item">
 <span class="stat-label">Windrichtung</span>
-<span id="tomorrow-deg" class="stat-value">--°</span>
+<span id="tomorrow-deg" class="stat-value">--</span>
 </div>
 </div>
 </div>
@@ -353,9 +351,10 @@ Ortsdaten durch BigDataCloud API &bull; WindBuk &copy; Single-File
 </footer>
 
 <script>
-// Angepasste universelle Wind-Bezeichnungen
 function getWindClassification(deg, speed) {
-if (speed >= 65) return { name: "Sturm / Orkan", desc: "Extrem starker Wind, Gefahr!", code: "STURM" };
+if (speed >= 118) return { name: "Orkan (Hurrikan-Stärke)", desc: "Extrem starker Wind, absolute Gefahr!", code: "ORKAN" };
+if (speed >= 89) return { name: "Schwerer Sturm", desc: "Baumschäden, strukturelle Schäden möglich", code: "S-STURM" };
+if (speed >= 62) return { name: "Sturm", desc: "Zweige brechen, erschwertes Gehen im Freien", code: "STURM" };
 if (deg >= 22.5 && deg < 67.5) return { name: "Nordostwind (NO)", desc: "Adria-Äquivalent: Bura / Bora", code: "NE" };
 if (deg >= 67.5 && deg < 112.5) return { name: "Ostwind (O)", desc: "Adria-Äquivalent: Levante", code: "E" };
 if (deg >= 112.5 && deg < 157.5) return { name: "Südostwind (SO)", desc: "Adria-Äquivalent: Jugo / Scirocco", code: "SE" };
@@ -366,11 +365,18 @@ if (deg >= 292.5 && deg < 337.5) return { name: "Nordwestwind (NW)", desc: "Adri
 return { name: "Nordwind (N)", desc: "Adria-Äquivalent: Tramontana", code: "N" };
 }
 
+// NEU: Wandelt 0-360 Grad in eine Himmelsrichtung (z.B. NNO) um
+function getCompassDirection(deg) {
+const val = Math.floor((deg / 22.5) + 0.5);
+const arr = ["N", "NNO", "NO", "ONO", "O", "OSO", "SO", "SSO", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+return arr[(val % 16)];
+}
+
 function getWindColor(speed) {
-if (speed < 20) return '#10b981'; // Grün (Ruhig / Schwach)
-if (speed < 40) return '#fbbf24'; // Gelb (Mäßig)
-if (speed < 62) return '#f97316'; // Orange (Starker Wind)
-return '#f43f5e'; // Rot (Sturm / Orkan)
+if (speed < 20) return '#10b981'; // Grün
+if (speed < 40) return '#fbbf24'; // Gelb
+if (speed < 62) return '#f97316'; // Orange
+return '#f43f5e'; // Rot
 }
 
 function setStatus(msg, isError = false) {
@@ -386,14 +392,12 @@ const y = dateObj.getFullYear();
 return `${d}.${m}.${y}`;
 }
 
-// NEU: Funktion zur Ermittlung des Städtenamens anhand der Koordinaten
 function fetchCityName(lat, lon) {
 const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=de`;
 fetch(url)
 .then(res => res.json())
 .then(data => {
 document.getElementById('location-bar').style.display = 'flex';
-// Nimmt die Stadt, andernfalls die Region, andernfalls das Land
 const place = data.city || data.locality || data.principalSubdivision || "Unbekannter Ort"
 document.getElementById('city-name').innerText = `${place} (${data.countryCode})`;
 })
@@ -416,9 +420,7 @@ position => {
 const lat = position.coords.latitude;
 const lon = position.coords.longitude;
 setStatus("Wetterdaten werden geladen...");
-// Stadtname laden
 fetchCityName(lat, lon);
-// Wetterdaten laden
 loadWindData(lat, lon);
 },
 error => {
@@ -465,7 +467,7 @@ const todayWind = getWindClassification(todayDeg, todayGusts);
 
 document.getElementById('today-wind-name').innerText = todayWind.name;
 document.getElementById('today-direction-text').innerText = todayWind.desc;
-document.getElementById('today-deg').innerText = `${todayDeg}°`;
+document.getElementById('today-deg').innerText = getCompassDirection(todayDeg); // ÄNDERUNG HIER
 const todayGustsEl = document.getElementById('today-gusts');
 todayGustsEl.innerText = `${todayGusts} km/h`;
 todayGustsEl.style.color = getWindColor(todayGusts);
@@ -478,7 +480,7 @@ const tomorrowWind = getWindClassification(tomorrowDeg, tomorrowGusts);
 
 document.getElementById('tomorrow-wind-name').innerText = tomorrowWind.name;
 document.getElementById('tomorrow-direction-text').innerText = tomorrowWind.desc;
-document.getElementById('tomorrow-deg').innerText = `${tomorrowDeg}°`;
+document.getElementById('tomorrow-deg').innerText = getCompassDirection(tomorrowDeg); // ÄNDERUNG HIER
 const tomorrowGustsEl = document.getElementById('tomorrow-gusts');
 tomorrowGustsEl.innerText = `${tomorrowGusts} km/h`;
 tomorrowGustsEl.style.color = getWindColor(tomorrowGusts);
@@ -512,10 +514,10 @@ setStatus("Beispieldaten (Bura an der Adria) geladen.");
 const demoData = {
 daily: {
 winddirection_10m_dominant: [45, 315],
-windspeed_10m_max: [52, 18]
+windspeed_10m_max: [125, 18]
 },
 hourly: {
-windspeed_10m: [35, 38, 42, 48, 52, 50, 45, 40, 32, 28, 25, 22, 20, 18, 18, 16, 15, 14, 12, 10, 10, 8, 8, 8],
+windspeed_10m: [125, 110, 95, 80, 52, 50, 45, 40, 32, 28, 25, 22, 20, 18, 18, 16, 15, 14, 12, 10, 10, 8, 8, 8],
 winddirection_10m: Array(24).fill(45)
 }
 };
